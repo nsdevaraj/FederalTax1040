@@ -1,0 +1,416 @@
+<HTML>
+<HEAD>
+<TITLE>Tax Calculator</TITLE>
+ 
+  
+
+<SCRIPT LANGUAGE="JavaScript" SRC="taxrates.js"></SCRIPT>
+ 
+
+<STYLE> 
+</STYLE><meta name="viewport" content="width=device-width, initial-scale=1">
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" LINK="#009999" VLINK="#666666" TOPMARGIN=0>
+     <TABLE WIDTH="1070" BORDER=0 CELLPADDING=0 CELLSPACING=0>
+      <TR>
+
+        <TD VALIGN="TOP">
+
+          <TABLE WIDTH="560">
+            <TR>
+              <TD>
+
+                <FORM NAME="mainform">
+                  <CENTER>
+
+                    <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0" BGCOLOR="#CCCC99">
+                      <TR>
+                        <TD>
+                          <TABLE WIDTH="400" BORDER="0" CELLPADDING="2" CELLSPACING="2">
+                            <TR BGCOLOR="#FFFFFF">
+                              <TD COLSPAN=3>
+                                <TABLE>
+                                  <TR>
+                                    <TD>Tax Year:</TD>
+                                    <TD>
+                                      <SELECT NAME="year" onChange="initForm()">
+                                      </SELECT>
+                                    </TD>
+                                  </TR>
+                                  <TR>
+                                    <TD>
+                                      Filing Status:
+                                    </TD>
+                                    <TD>
+                                      <SELECT NAME="status" onChange="initForm()">
+                                        <OPTION VALUE="S" SELECTED> Single
+                                        <OPTION VALUE="MJ"> Married filing jointly
+                                        <OPTION VALUE="MS"> Married filing separately
+                                        <OPTION VALUE="HH"> Head of household
+                                      </SELECT>
+                                    </TD>
+                                  </TR>
+                                </TABLE>
+                              </TD>
+                            </TR>
+                            <TR BGCOLOR="#FFFFFF">
+                              <TD ROWSPAN=3 ALIGN="CENTER" BGCOLOR="#F0F0F0">1040</br> page 1</TD>
+                              <TD>Regularly Taxed Income:<BR>(salary, interest, regularly-taxed dividends, <BR> short-term capital gains)</TD>
+                              <TD ALIGN="RIGHT">$ <INPUT TYPE="TEXT" NAME="income_reg" SIZE="8" onChange="value=formatNumber(value,0,0)"></TD>
+                            </TR>
+                            <TR BGCOLOR="#FFFFFF">
+                              <TD>Qualified Dividends and <BR> Long Term Capital Gains: </TD>
+                              <TD ALIGN="RIGHT">+ <INPUT TYPE="TEXT" NAME="ltcg" SIZE="8" onChange="value=formatNumber(value,0,0)"></TD>
+                            </TR>
+                            <TR BGCOLOR="#FFFFFF">
+                              <TD>Adjustments: <BR>(contributions to deductible <BR> retirement accounts...)</TD>
+                              <TD ALIGN="RIGHT">- <INPUT TYPE="TEXT" NAME="adjustments" SIZE="8" onChange="value=formatNumber(value,0,0)"></TD>
+                            </TR>
+                            <TR BGCOLOR="#FFFFFF">
+                              <TD ROWSPAN=2 ALIGN="CENTER" BGCOLOR="#F0F0F0">1040</br> page 2</TD>
+                              <TD>
+                                <TABLE BORDER=0 CELLPADDING=0 CELLSPACING=0>
+                                  <TR>
+                                    <TD>
+                                      Deductions: &nbsp; </TD>
+                                    <TD> Standard &nbsp;
+                                    </TD>
+                                    <TD>
+                                      $ <INPUT TYPE="TEXT" NAME="deductions_std" SIZE="8" READONLY>
+                                    </TD>
+                                  </TR>
+                                  <TR>
+                                    <TD ALIGN="CENTER">
+                                      or</TD>
+                                    <TD> Itemized
+                                    </TD>
+                                    <TD>
+                                      $ <INPUT TYPE="TEXT" NAME="deductions_itm" SIZE="8" onChange="value=formatNumber(value,0,0);findDeductions()">
+                                    </TD>
+                                  </TR>
+                                </TABLE>
+                              </TD>
+
+                              <TD ALIGN="RIGHT">- <INPUT TYPE="TEXT" NAME="deductions" SIZE="8" READONLY></TD>
+                            </TR>
+
+                            <TR BGCOLOR="#FFFFFF">
+                              <TD># Exemptions: <INPUT TYPE="TEXT" NAME="num_exemptions" SIZE="2" VALUE="1" onChange="value=formatNumber(value,0,0);findExemptions()"></TD>
+                              <TD ALIGN="RIGHT">- <INPUT TYPE="TEXT" NAME="exemptions" SIZE="8" READONLY></TD>
+                            </TR>
+
+                            <TR>
+                              <TD COLSPAN=3 ALIGN="CENTER">
+                                <INPUT TYPE="BUTTON" VALUE="Calculate" onClick="calcTax()">
+                              </TD>
+                            </TR>
+                            <TR BGCOLOR="FFFFFF">
+                              <TD COLSPAN=2>Adjusted Gross Income:</TD>
+                              <TD ALIGN="RIGHT">$ <INPUT TYPE="TEXT" name="agi" SIZE="8" READONLY></TD>
+                        </TD>
+                      <TR BGCOLOR="FFFFFF">
+                        <TD COLSPAN=2>Taxable Income:</TD>
+                        <TD ALIGN="RIGHT">$ <INPUT TYPE="TEXT" name="income" SIZE="8" READONLY></TD>
+              </TD>
+            </TR>
+            <TR BGCOLOR="FFFFFF">
+              <TD COLSPAN=2>Estimated Tax:<BR>
+                <TABLE BORDER=0 CELLPADDING=0 CELLSPACING=0>
+                  <TR>
+                    <TD> &nbsp; on Regular Income:</TD>
+                    <TD ALIGN="RIGHT">$ <INPUT TYPE="TEXT" name="tax_reg" SIZE="8" READONLY></TD>
+                  </TR>
+                  <TR>
+                    <TD> &nbsp; on Qualified Dividends and <BR> &nbsp; &nbsp; &nbsp;&nbsp; Long Term Capital Gains: &nbsp; </TD>
+                    <TD ALIGN="RIGHT" VALIGN="BOTTOM">$ <INPUT TYPE="TEXT" name="tax_ltcg" SIZE="8" READONLY></TD>
+                  </TR>
+                </TABLE>
+                <BR>Total:
+
+              </TD>
+              <TD ALIGN="RIGHT" VALIGN="BOTTOM">$ <INPUT TYPE="TEXT" name="tax" SIZE="8" READONLY></TD>
+        </TD>
+         <TR BGCOLOR="FFFFFF">
+			<TD COLSPAN=2>Tax Bracket:</TD><TD ALIGN="RIGHT"><INPUT TYPE="TEXT" name="tax_bracket" SIZE="6" READONLY>%</TD>
+		</TD>
+		</TR> 
+    </TABLE>
+    </TD>
+    </TR>
+    </TABLE>
+
+    </CENTER>
+    </FORM>
+  
+<P> 
+
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+var exemption_2000 = 2800;
+var deduction_2000_S = 4400;
+var deduction_2000_MJ = 7350;
+var deduction_2000_MS = 3675;
+var deduction_2000_HH = 6450;
+
+var exemption_2001 = 2900;
+var deduction_2001_S = 4550;
+var deduction_2001_MJ = 7600;
+var deduction_2001_MS = 3800;
+var deduction_2001_HH = 6650;
+
+var exemption_2002 = 3000;
+var deduction_2002_S = 4700;
+var deduction_2002_MJ = 7850;
+var deduction_2002_MS = 3925;
+var deduction_2002_HH = 6900;
+
+var exemption_2003 = 3050;
+var deduction_2003_S = 4750;
+var deduction_2003_MJ = 9500;
+var deduction_2003_MS = 4750;
+var deduction_2003_HH = 7000;
+
+var exemption_2004 = 3100;
+var deduction_2004_S = 4850;
+var deduction_2004_MJ = 9700;
+var deduction_2004_MS = 4850;
+var deduction_2004_HH = 7150;
+
+var exemption_2005 = 3200;
+var deduction_2005_S = 5000;
+var deduction_2005_MJ = 10000;
+var deduction_2005_MS = 5000;
+var deduction_2005_HH = 7300;
+
+var exemption_2006 = 3300;
+var deduction_2006_S = 5150;
+var deduction_2006_MJ = 10300;
+var deduction_2006_MS = 5150;
+var deduction_2006_HH = 7550;
+
+var exemption_2007 = 3400;
+var deduction_2007_S = 5350;
+var deduction_2007_MJ = 10700;
+var deduction_2007_MS = 5350;
+var deduction_2007_HH = 7850;
+
+var exemption_2008 = 3500;
+var deduction_2008_S = 5450;
+var deduction_2008_MJ = 10900;
+var deduction_2008_MS = 5450;
+var deduction_2008_HH = 8000;
+
+var exemption_2009 = 3650;
+var deduction_2009_S = 5700;
+var deduction_2009_MJ = 11400;
+var deduction_2009_MS = 5700;
+var deduction_2009_HH = 8350;
+
+var exemption_2010 = 3650;
+var deduction_2010_S = 5700;
+var deduction_2010_MJ = 11400;
+var deduction_2010_MS = 5700;
+var deduction_2010_HH = 8400;
+
+var exemption_2011 = 3700;
+var deduction_2011_S = 5800;
+var deduction_2011_MJ = 11600;
+var deduction_2011_MS = 5800;
+var deduction_2011_HH = 8500;
+
+var exemption_2012 = 3800;
+var deduction_2012_S = 5950;
+var deduction_2012_MJ = 11900;
+var deduction_2012_MS = 5950;
+var deduction_2012_HH = 8700;
+
+var exemption_2013 = 3900;
+var deduction_2013_S = 6100;
+var deduction_2013_MJ = 12200;
+var deduction_2013_MS = 6100;
+var deduction_2013_HH = 8950;
+
+var exemption_2014 = 3950;
+var deduction_2014_S = 6200;
+var deduction_2014_MJ = 12400;
+var deduction_2014_MS = 6200;
+var deduction_2014_HH = 9100;
+
+var exemption_2015 = 4000;
+var deduction_2015_S = 6300;
+var deduction_2015_MJ = 12600;
+var deduction_2015_MS = 6300;
+var deduction_2015_HH = 9250;
+
+var exemption_2016 = 4050;
+var deduction_2016_S = 6300;
+var deduction_2016_MJ = 12600;
+var deduction_2016_MS = 6300;
+var deduction_2016_HH = 9300;
+
+var exemption_2017 = 4050;
+var deduction_2017_S = 6350;
+var deduction_2017_MJ = 12700;
+var deduction_2017_MS = 6350;
+var deduction_2017_HH = 9350; 
+
+var exemption_2018 = 0;
+var deduction_2018_S = 12000;
+var deduction_2018_MJ = 24000;
+var deduction_2018_MS = 12000;
+var deduction_2018_HH = 18000;
+
+var exemption_2019 = 0;
+var deduction_2019_S = 12200;
+var deduction_2019_MJ = 24400;
+var deduction_2019_MS = 12200;
+var deduction_2019_HH = 18350;
+
+var exemption_2020 = 0;
+var deduction_2020_S = 12400;
+var deduction_2020_MJ = 24800;
+var deduction_2020_MS = 12400;
+var deduction_2020_HH = 18650;
+
+
+function getLTCGTax(yyyy, status, reg_income, ltcg) {
+  var tax = 0;
+
+  var ary = eval("t_" + yyyy + "_" + status);
+  var i, b_L, b_U;
+  for (i = 0; i < ary.length / 2; i++) {
+    amt_L = (i == 0 ? 0 : ary[(i - 1) * 2]);
+
+    amt_U = ary[i * 2];
+    if (amt_U < 0) amt_U = reg_income + ltcg;
+
+    if (amt_U <= reg_income) continue;
+    if (amt_L >= (reg_income + ltcg)) continue;
+
+    if (amt_L < reg_income) amt_L = reg_income;
+    if (amt_U > reg_income + ltcg) amt_U = reg_income + ltcg
+
+    tax += ((amt_U - amt_L) * getLTCGTaxRate(yyyy, status, ary[i * 2 + 1] / 100));
+  }
+  return tax;
+}
+
+function getLTCGTaxRate(yyyy, status, bracket) {
+  var rate = .15;
+  if (yyyy < 2003) {
+    rate = (bracket > .20 ? .20 : .10);
+  }
+  if (yyyy >= 2003 && yyyy < 2008) {
+    rate = (bracket > .15 ? .15 : .05);
+  }
+  if (yyyy >= 2008 && yyyy < 2018) {
+    rate = (bracket > .15 ? .15 : 0);
+
+    if (yyyy >= 2013)
+      if (bracket == .396) rate = .2;
+  }
+  if (yyyy >= 2018) {
+    rate = (bracket > .12 ? .15 : 0);
+
+    if (bracket == .37) rate = .2;
+  }
+
+
+  return rate;
+}
+
+
+function getTaxBracket(yyyy, status, income) {
+  var bracket = 0;
+
+  var ary = eval("t_" + yyyy + "_" + status);
+  var i, amt_U;
+  for (i = 0; i < ary.length / 2; i++) {
+    bracket = ary[i * 2 + 1];
+    if (income <= ary[i * 2] || ary[i * 2] == -1)
+      break;
+  }
+  return bracket;
+}
+
+// end generic code
+
+
+var yyyy = yDisplayTaxes;
+
+var y;
+y = getHrefParam('y');
+if (y) {
+  yyyy = y;
+  yDisplayTaxes = numval(y);
+}
+
+function findExemptions() {
+  var num_exemptions = numval(document.mainform.num_exemptions.value);
+  var m = eval("exemption_" + yyyy);
+  document.mainform.exemptions.value = formatNumber(num_exemptions * m);
+}
+
+function findDeductions() {
+  var status = getCtrlVal(document.mainform.status);
+  var deductions_std = eval("deduction_" + yyyy + "_" + status);
+
+  document.mainform.deductions_std.value = formatNumber(deductions_std);
+  var deductions_itm = numval(document.mainform.deductions_itm.value);
+  document.mainform.deductions.value = formatNumber(Math.max(deductions_std, deductions_itm));
+}
+
+function calcTax() {
+  var status = getCtrlVal(document.mainform.status);
+
+  findDeductions();
+  var income_reg = numval(document.mainform.income_reg.value);
+  var ltcg = numval(document.mainform.ltcg.value);
+  var adjustments = numval(document.mainform.adjustments.value);
+  var exemptions = numval(document.mainform.exemptions.value);
+  var deductions = numval(document.mainform.deductions.value);
+
+  var agi = income_reg + ltcg - adjustments;
+  if (agi < 0) agi = 0;
+
+  var income = income_reg + ltcg - adjustments - exemptions - deductions;
+  if (income < 0) income = 0;
+
+  document.mainform.agi.value = formatNumber(agi);
+  document.mainform.income.value = formatNumber(income);
+
+  var bracket = getTaxBracket(yyyy, status, income_reg - adjustments - exemptions - deductions);
+  var ltcgTax = getLTCGTax(numval(yyyy), status, income_reg - adjustments - exemptions - deductions, ltcg);
+  var tax = getTax(yyyy, status, income - ltcg) + ltcgTax;
+
+  if (income == 0)
+    tax = 0;
+
+  document.mainform.tax_reg.value = formatNumber(getTax(yyyy, status, income - ltcg), 0);
+  document.mainform.tax_ltcg.value = formatNumber(ltcgTax, 0);
+  document.mainform.tax.value = formatNumber(tax, 0);
+  document.mainform.tax_bracket.value = bracket;
+}
+
+function initForm() {
+  yyyy = getCtrlVal(document.mainform.year);
+  findDeductions();
+  findExemptions();
+}
+
+document.mainform.year.length = yMaxTaxes + 1 - y0Taxes;
+var y;
+for (y = y0Taxes; y <= yMaxTaxes; y++) {
+  document.mainform.year.options[y - y0Taxes].text = y;
+  document.mainform.year.options[y - y0Taxes].value = y;
+  if (y == yDisplayTaxes) document.mainform.year.selectedIndex = y - y0Taxes;
+}
+
+initForm();
+
+//-->
+</SCRIPT>
+
+</BODY>
+</HTML>
